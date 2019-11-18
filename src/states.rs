@@ -4,6 +4,7 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
+use crate::key::KeyScan;
 use crate::objects::Paddle;
 use ggez::graphics::{self, Canvas, DrawMode, DrawParam, Drawable, Rect};
 use ggez::input::keyboard::KeyCode;
@@ -35,6 +36,7 @@ pub struct InitState {
     title: ggez::graphics::Text,
     start_menu: ggez::graphics::Text,
     exit_menu: ggez::graphics::Text,
+    key_scan: KeyScan,
 }
 
 impl InitState {
@@ -43,12 +45,14 @@ impl InitState {
         let title = ggez::graphics::Text::new(("Break Out", font, 16.0));
         let start_menu = ggez::graphics::Text::new(("start game", font, 12.0));
         let exit_menu = ggez::graphics::Text::new(("exit", font, 12.0));
+        let key_scan = KeyScan::new();
         InitState {
             status: InitStateMenu::Start,
             font,
             title,
             start_menu,
             exit_menu,
+            key_scan,
         }
     }
 }
@@ -59,7 +63,19 @@ impl States for InitState {
         // 화살표를 눌러 상태를 변경한다.
         let pressed_key = ggez::input::keyboard::pressed_keys(ctx);
 
-        if pressed_key.contains(&KeyCode::Up) || pressed_key.contains(&KeyCode::Down) {
+        if !pressed_key.contains(&KeyCode::Up) {
+            self.key_scan.just_released(KeyCode::Up);
+        }
+
+        if !pressed_key.contains(&KeyCode::Down) {
+            self.key_scan.just_released(KeyCode::Down);
+        }
+
+        if pressed_key.contains(&KeyCode::Up) && self.key_scan.just_pressed(KeyCode::Up)
+            || pressed_key.contains(&KeyCode::Down) && self.key_scan.just_pressed(KeyCode::Down)
+        {
+            //just_pressed 인지 확인
+
             if self.status == InitStateMenu::Exit {
                 self.status = InitStateMenu::Start
             } else {
