@@ -13,6 +13,7 @@ fn main() -> GameResult {
         .window_setup(ggez::conf::WindowSetup::default().title("Skeleton: ggez"))
         .build()?;
 
+    ggez::graphics::set_default_filter(ctx, ggez::graphics::FilterMode::Linear);
     let state = &mut ggez_breakout::game::Game::new(ctx)?;
 
     event::run(ctx, event_loop, state)

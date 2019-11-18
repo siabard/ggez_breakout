@@ -10,7 +10,7 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 
 use crate::states;
-use crate::states::StatesResult;
+use crate::states::StateResult;
 
 /// 실제 물리적 해상도
 pub const WINDOW_WIDTH: f32 = 1280.;
@@ -26,8 +26,6 @@ pub struct Game {
     states: Vec<Box<dyn states::States>>,
     /// 게임내 double bufferingmf 위한 버퍼
     buffer: ggez::graphics::Canvas,
-    /// 게임의 일시 정지 상태
-    paused: bool,
 }
 
 impl Game {
@@ -40,7 +38,7 @@ impl Game {
     pub fn new(ctx: &mut Context) -> GameResult<Game> {
         // 초기에는 InitState를 넣는다.
 
-        let init_state = states::InitStates::new();
+        let init_state = states::InitState::new(ctx);
 
         let buffer = ggez::graphics::Canvas::new(
             ctx,
@@ -53,7 +51,6 @@ impl Game {
         let s = Game {
             states: vec![Box::new(init_state)],
             buffer,
-            paused: false,
         };
         Ok(s)
     }
@@ -71,52 +68,43 @@ impl event::EventHandler for Game {
             ggez::event::quit(ctx);
         }
 
-        // 일시 정지
-        if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::P) {
-            self.paused = !self.paused;
-        }
+        // dt(delta) 얻어오기
+        // FPS를 60frame per seconds 로 함
+        const DESIRED_FPS: u32 = 60;
 
-        // 게임이 일시 정지 상태가 아닐 때 update를 수행한다.
+        while timer::check_update_time(ctx, DESIRED_FPS) {
+            let dt = 1.0 / (DESIRED_FPS as f32);
 
-        if self.paused == false {
-            // dt(delta) 얻어오기
-            // FPS를 60frame per seconds 로 함
-            const DESIRED_FPS: u32 = 60;
-
-            while timer::check_update_time(ctx, DESIRED_FPS) {
-                let dt = 1.0 / (DESIRED_FPS as f32);
-
-                // 현재 states 값을 얻어와 해당 states의 update 를 실행한다.
-                match self.states.last_mut() {
-                    Some(current_state) => {
-                        match current_state.update(ctx, dt) {
-                            // 새로운 State를 생성하고 해당 State로 수행권한을 넘긴다.
-                            StatesResult::PushState(s) => self.states.push(s),
-                            // 기존의 State를 삭제하고, 이전 State로 이전한다.
-                            StatesResult::PopState => {
-                                self.states.pop();
-                                ()
-                            }
-                            // 기존의 state를 삭제하고 신규 State로 이전한다.
-                            StatesResult::Trans(s) => {
-                                self.states.pop();
-                                self.states.push(s);
-                                ()
-                            }
-                            _ => (),
+            // 현재 states 값을 얻어와 해당 states의 update 를 실행한다.
+            match self.states.last_mut() {
+                Some(current_state) => {
+                    match current_state.update(ctx, dt) {
+                        // 새로운 State를 생성하고 해당 State로 수행권한을 넘긴다.
+                        StateResult::PushState(s) => self.states.push(s),
+                        // 기존의 State를 삭제하고, 이전 State로 이전한다.
+                        StateResult::PopState => {
+                            self.states.pop();
+                            ()
                         }
-                    }
-                    // 수행할 수 있는 state가 없다면 게임은 종료한다.
-                    None => {
-                        ggez::event::quit(ctx);
-                        ()
+                        // 기존의 state를 삭제하고 신규 State로 이전한다.
+                        StateResult::Trans(s) => {
+                            self.states.pop();
+                            self.states.push(s);
+                            ()
+                        }
+                        _ => (),
                     }
                 }
-
-                // 더이상 남은 state가 없다면 종료한다.
-                if self.states.is_empty() {
+                // 수행할 수 있는 state가 없다면 게임은 종료한다.
+                None => {
                     ggez::event::quit(ctx);
+                    ()
                 }
+            }
+
+            // 더이상 남은 state가 없다면 종료한다.
+            if self.states.is_empty() {
+                ggez::event::quit(ctx);
             }
         }
 
