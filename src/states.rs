@@ -97,23 +97,19 @@ impl States for InitState {
 
             StateResult::Void
         } else if pressed_key.contains(&KeyCode::Return) {
+            // reg 초기화
+            reg.clear_font();
+            reg.clear_image();
+            reg.clear_sound();
+            reg.clear_text();
+
             match self.status {
                 InitStateMenu::Start => {
                     let game_state = PlayState::new(ctx, reg);
-                    reg.clear_font();
-                    reg.clear_image();
-                    reg.clear_sound();
-                    reg.clear_text();
+
                     StateResult::Trans(Box::new(game_state))
                 }
-                InitStateMenu::Exit => {
-                    // reg 초기화
-                    reg.clear_font();
-                    reg.clear_image();
-                    reg.clear_sound();
-                    reg.clear_text();
-                    StateResult::PopState
-                }
+                InitStateMenu::Exit => StateResult::PopState,
             }
         } else {
             StateResult::Void
