@@ -4,7 +4,6 @@ use ggez::Context;
 use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Clone)]
 pub struct Quad {
     source: ggez::graphics::Image,
     width: f32,

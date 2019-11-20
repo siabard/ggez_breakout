@@ -2,6 +2,10 @@
 //! 게임 뼈대는 실제 Rendering을 수행한다.
 
 use ggez;
+use ggez::audio;
+
+use ggez::audio::SoundSource;
+
 use ggez::event;
 use ggez::event::KeyCode;
 use ggez::graphics::{self, Canvas};
@@ -9,6 +13,7 @@ use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, GameResult};
 
+use crate::reg::Reg;
 use crate::states;
 use crate::states::StateResult;
 
@@ -22,10 +27,12 @@ pub const VIRTUAL_HEIGHT: f32 = 243.;
 
 /// 게임 구조체
 pub struct Game {
-    /// 게임내 각 state의 벡터 (stackqkd식)
+    // 게임내 각 state의 벡터 (stack식)
     states: Vec<Box<dyn states::States>>,
-    /// 게임내 double bufferingmf 위한 버퍼
+    // 게임내 double bufferingmf 위한 버퍼
     buffer: ggez::graphics::Canvas,
+    // 게임내 데이터 보존소
+    reg: Reg,
 }
 
 impl Game {
@@ -38,7 +45,9 @@ impl Game {
     pub fn new(ctx: &mut Context) -> GameResult<Game> {
         // 초기에는 InitState를 넣는다.
 
-        let init_state = states::InitState::new(ctx);
+        let mut reg = Reg::new();
+
+        let init_state = states::InitState::new(ctx, &mut reg);
 
         let buffer = ggez::graphics::Canvas::new(
             ctx,
@@ -51,6 +60,7 @@ impl Game {
         let s = Game {
             states: vec![Box::new(init_state)],
             buffer,
+            reg,
         };
         Ok(s)
     }
@@ -78,7 +88,7 @@ impl event::EventHandler for Game {
             // 현재 states 값을 얻어와 해당 states의 update 를 실행한다.
             match self.states.last_mut() {
                 Some(current_state) => {
-                    match current_state.update(ctx, dt) {
+                    match current_state.update(ctx, &mut self.reg, dt) {
                         // 새로운 State를 생성하고 해당 State로 수행권한을 넘긴다.
                         StateResult::PushState(s) => self.states.push(s),
                         // 기존의 State를 삭제하고, 이전 State로 이전한다.
@@ -135,7 +145,7 @@ impl event::EventHandler for Game {
 
         match self.states.last_mut() {
             Some(current_state) => {
-                current_state.render(ctx, &mut self.buffer);
+                current_state.render(ctx, &mut self.reg, &mut self.buffer);
 
                 // 이제 메인 윈도우에 그림
                 graphics::set_canvas(ctx, None);

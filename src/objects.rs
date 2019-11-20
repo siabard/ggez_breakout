@@ -18,7 +18,6 @@ pub const HUGE: i32 = 0b1000_0000;
 
 pub const PADDLE_SPEED: f32 = 200.;
 
-#[derive(Clone)]
 pub struct Paddle {
     sprite: Quad,
     size: i32,
@@ -27,6 +26,11 @@ pub struct Paddle {
     x: f32,
     y: f32,
     dx: f32,
+}
+
+pub trait Object {
+    fn update(&mut self, ctx: &mut Context, dt: f32);
+    fn draw(&mut self, ctx: &mut Context);
 }
 
 impl Paddle {
@@ -63,8 +67,10 @@ impl Paddle {
             dx: 0.,
         }
     }
+}
 
-    pub fn update(&mut self, ctx: &mut Context, dt: f32) {
+impl Object for Paddle {
+    fn update(&mut self, ctx: &mut Context, dt: f32) {
         if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::Left) {
             self.dx = -1. * PADDLE_SPEED;
         } else if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::Right)
@@ -80,7 +86,8 @@ impl Paddle {
             self.x = game::VIRTUAL_WIDTH.min(self.x + self.dx * dt);
         }
     }
-    pub fn draw(&mut self, ctx: &mut Context) {
+
+    fn draw(&mut self, ctx: &mut Context) {
         self.sprite
             .draw_sprite(ctx, PADDLE_FLAG + self.color + self.size, self.x, self.y);
     }

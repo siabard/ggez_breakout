@@ -4,12 +4,14 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
-use crate::key::KeyScan;
 use crate::objects::Paddle;
-use ggez::graphics::{self, Canvas, DrawMode, DrawParam, Drawable, Rect};
+use crate::reg::Reg;
+use ggez::audio;
+use ggez::audio::SoundSource;
+use ggez::graphics::{self, Canvas, DrawMode, DrawParam, Rect};
 use ggez::input::keyboard::KeyCode;
 use ggez::nalgebra as na;
-use ggez::{Context, GameResult};
+use ggez::Context;
 use std::collections::HashMap;
 
 pub enum StateResult {
@@ -20,8 +22,14 @@ pub enum StateResult {
 }
 
 pub trait States {
-    fn update(&mut self, ctx: &mut Context, dt: f32) -> StateResult;
-    fn render(&mut self, ctx: &mut Context, buffer: &mut Canvas) -> StateResult;
+    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32) -> StateResult;
+    fn render(&mut self, ctx: &mut Context, reg: &mut Reg, buffer: &mut Canvas) -> StateResult;
+}
+
+pub fn play_sound(sound: &mut audio::Source) {
+    if sound.playing() == false {
+        sound.play();
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -29,50 +37,55 @@ pub enum InitStateMenu {
     Start,
     Exit,
 }
-#[derive(Clone)]
+
 pub struct InitState {
     status: InitStateMenu,
-    font: ggez::graphics::Font,
-    title: ggez::graphics::Text,
-    start_menu: ggez::graphics::Text,
-    exit_menu: ggez::graphics::Text,
-    key_scan: KeyScan,
 }
 
 impl InitState {
-    pub fn new(ctx: &mut Context) -> InitState {
+    pub fn new(ctx: &mut Context, reg: &mut Reg) -> InitState {
         let font = ggez::graphics::Font::new(ctx, "/font.ttf").unwrap();
         let title = ggez::graphics::Text::new(("Break Out", font, 16.0));
         let start_menu = ggez::graphics::Text::new(("start game", font, 12.0));
         let exit_menu = ggez::graphics::Text::new(("exit", font, 12.0));
-        let key_scan = KeyScan::new();
-        InitState {
+
+        reg.add_font("font".to_owned(), font);
+        reg.add_text("title".to_owned(), title);
+        reg.add_text("start_menu".to_owned(), start_menu);
+        reg.add_text("exit_menu".to_owned(), exit_menu);
+        reg.add_sound(
+            "music".to_owned(),
+            audio::Source::new(ctx, "/music.wav").unwrap(),
+        );
+        let state = InitState {
             status: InitStateMenu::Start,
-            font,
-            title,
-            start_menu,
-            exit_menu,
-            key_scan,
-        }
+        };
+
+        state
     }
 }
 
 // 메뉴 화면
 impl States for InitState {
-    fn update(&mut self, ctx: &mut Context, _dt: f32) -> StateResult {
+    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, _dt: f32) -> StateResult {
+        // 음악을 플레이한다.
+
+        let music = reg.get_sound_mut("music".to_owned()).unwrap();
+        play_sound(music);
+
         // 화살표를 눌러 상태를 변경한다.
         let pressed_key = ggez::input::keyboard::pressed_keys(ctx);
 
         if !pressed_key.contains(&KeyCode::Up) {
-            self.key_scan.just_released(KeyCode::Up);
+            reg.just_released(KeyCode::Up);
         }
 
         if !pressed_key.contains(&KeyCode::Down) {
-            self.key_scan.just_released(KeyCode::Down);
+            reg.just_released(KeyCode::Down);
         }
 
-        if pressed_key.contains(&KeyCode::Up) && self.key_scan.just_pressed(KeyCode::Up)
-            || pressed_key.contains(&KeyCode::Down) && self.key_scan.just_pressed(KeyCode::Down)
+        if pressed_key.contains(&KeyCode::Up) && reg.just_pressed(KeyCode::Up)
+            || pressed_key.contains(&KeyCode::Down) && reg.just_pressed(KeyCode::Down)
         {
             //just_pressed 인지 확인
 
@@ -86,10 +99,21 @@ impl States for InitState {
         } else if pressed_key.contains(&KeyCode::Return) {
             match self.status {
                 InitStateMenu::Start => {
-                    let game_state = PlayState::new(ctx);
+                    let game_state = PlayState::new(ctx, reg);
+                    reg.clear_font();
+                    reg.clear_image();
+                    reg.clear_sound();
+                    reg.clear_text();
                     StateResult::Trans(Box::new(game_state))
                 }
-                InitStateMenu::Exit => StateResult::PopState,
+                InitStateMenu::Exit => {
+                    // reg 초기화
+                    reg.clear_font();
+                    reg.clear_image();
+                    reg.clear_sound();
+                    reg.clear_text();
+                    StateResult::PopState
+                }
             }
         } else {
             StateResult::Void
@@ -97,16 +121,19 @@ impl States for InitState {
     }
 
     /// 모든 Render는 이제 자체에 포함된 buffer에만 그린다.
-    fn render(&mut self, ctx: &mut Context, buffer: &mut Canvas) -> StateResult {
+    fn render(&mut self, ctx: &mut Context, reg: &mut Reg, buffer: &mut Canvas) -> StateResult {
         ggez::graphics::set_canvas(ctx, Some(buffer));
 
         graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
 
         // 타이틀 (상단 5%, 각 메뉴 상단에서 85%, 95% 위치)
-        let span = self.title.width(ctx) as f32;
+        let title = reg.get_text("title".to_owned()).unwrap();
+        let start_menu = reg.get_text("start_menu".to_owned()).unwrap();
+        let exit_menu = reg.get_text("exit_menu".to_owned()).unwrap();
+        let span = title.width(ctx) as f32;
         graphics::draw(
             ctx,
-            &self.title,
+            title,
             (
                 na::Point2::new(
                     (game::VIRTUAL_WIDTH - span) / 2.0,
@@ -118,10 +145,10 @@ impl States for InitState {
         )
         .unwrap();
 
-        let span = self.start_menu.width(ctx) as f32;
+        let span = start_menu.width(ctx) as f32;
         graphics::draw(
             ctx,
-            &self.start_menu,
+            start_menu,
             (
                 na::Point2::new(
                     (game::VIRTUAL_WIDTH - span) / 2.0,
@@ -136,10 +163,10 @@ impl States for InitState {
         )
         .unwrap();
 
-        let span = self.exit_menu.width(ctx) as f32;
+        let span = exit_menu.width(ctx) as f32;
         graphics::draw(
             ctx,
-            &self.exit_menu,
+            exit_menu,
             (
                 na::Point2::new(
                     (game::VIRTUAL_WIDTH - span) / 2.0,
@@ -161,7 +188,6 @@ impl States for InitState {
     }
 }
 
-#[derive(Clone)]
 pub struct PauseState {}
 
 impl PauseState {
@@ -171,7 +197,7 @@ impl PauseState {
 }
 
 impl States for PauseState {
-    fn update(&mut self, ctx: &mut Context, _dt: f32) -> StateResult {
+    fn update(&mut self, ctx: &mut Context, _reg: &mut Reg, _dt: f32) -> StateResult {
         // X가 눌러지면 스테이트 종료
         if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Q) {
             StateResult::PopState
@@ -180,7 +206,7 @@ impl States for PauseState {
         }
     }
 
-    fn render(&mut self, ctx: &mut Context, buffer: &mut Canvas) -> StateResult {
+    fn render(&mut self, ctx: &mut Context, _reg: &mut Reg, buffer: &mut Canvas) -> StateResult {
         ggez::graphics::set_canvas(ctx, Some(buffer));
 
         graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
@@ -192,43 +218,25 @@ impl States for PauseState {
     }
 }
 
-#[derive(Clone)]
 pub struct PlayState {
-    sprite: ggez::graphics::Mesh,
-    x: f32,
-    y: f32,
-    paddle: Paddle,
-    // font
-    font: HashMap<String, ggez::graphics::Font>,
-    /// 게임의 일시 정지 상태
     paused: bool,
 }
 
 impl PlayState {
-    pub fn new(ctx: &mut Context) -> PlayState {
+    pub fn new(ctx: &mut Context, reg: &mut Reg) -> PlayState {
         let default_font = ggez::graphics::Font::new(ctx, "/font.ttf").unwrap();
 
-        let mut font = HashMap::<String, ggez::graphics::Font>::new();
-        font.insert("default".to_owned(), default_font);
-        PlayState {
-            sprite: ggez::graphics::Mesh::new_rectangle(
-                ctx,
-                ggez::graphics::DrawMode::fill(),
-                Rect::new(0., 0., 100., 100.),
-                ggez::graphics::WHITE,
-            )
-            .unwrap(),
-            x: 0.,
-            y: 0.,
-            paddle: Paddle::new(ctx),
-            font,
-            paused: false,
-        }
+        reg.add_font("default".to_owned(), default_font);
+
+        reg.add_object("paddle".to_owned(), Box::new(Paddle::new(ctx)));
+
+        PlayState { paused: false }
     }
 }
 impl States for PlayState {
-    fn update(&mut self, ctx: &mut Context, dt: f32) -> StateResult {
+    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32) -> StateResult {
         if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::X) {
+            reg.clear_font();
             StateResult::PopState
         } else {
             if self.paused == false {
@@ -237,17 +245,9 @@ impl States for PlayState {
                 }
 
                 // paddle 처리
-                self.paddle.update(ctx, dt);
-                // X가 눌러지면 게임 스테이트 종료.
-                if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Up) {
-                    self.y = self.y - 100.;
-                    StateResult::Void
-                } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Down) {
-                    self.y = self.y + 100.;
-                    StateResult::Void
-                } else {
-                    StateResult::Void
-                }
+                let paddle = reg.get_object_mut("paddle".to_owned());
+                paddle.unwrap().update(ctx, dt);
+                StateResult::Void
             } else {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Return) {
                     self.paused = false;
@@ -258,21 +258,18 @@ impl States for PlayState {
         }
     }
 
-    fn render(&mut self, ctx: &mut Context, buffer: &mut Canvas) -> StateResult {
+    fn render(&mut self, ctx: &mut Context, reg: &mut Reg, buffer: &mut Canvas) -> StateResult {
         graphics::set_canvas(ctx, Some(buffer));
 
-        graphics::clear(ctx, [1.0, 0.0, 0.0, 1.0].into());
+        graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
 
-        let dest = na::Point2::new(self.x, self.y);
-        self.sprite
-            .draw(ctx, DrawParam::default().dest(dest))
-            .unwrap();
-        self.paddle.draw(ctx);
+        let paddle = reg.get_object_mut("paddle".to_owned());
+        paddle.unwrap().draw(ctx);
 
         if self.paused == true {
             let message = ggez::graphics::Text::new((
                 "Game Paused\n\nPress [Enter] To Resume",
-                *self.font.get("default").unwrap(),
+                *reg.get_font("default".to_owned()).unwrap(),
                 16.0,
             ));
 
