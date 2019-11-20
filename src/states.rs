@@ -4,7 +4,7 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
-use crate::objects::{self, Paddle};
+use crate::objects::{self, Ball, Paddle};
 use crate::reg::Reg;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -226,6 +226,7 @@ impl PlayState {
 
         reg.add_object("paddle".to_owned(), Box::new(Paddle::new(ctx)));
 
+        reg.add_object("ball".to_owned(), Box::new(Ball::new(ctx)));
         PlayState { paused: false }
     }
 }
@@ -274,6 +275,10 @@ impl States for PlayState {
 
                 let paddle = reg.get_object_mut("paddle".to_owned());
                 paddle.unwrap().update(ctx, dt);
+
+                // 공처리
+                let ball = reg.get_object_mut("ball".to_owned());
+                ball.unwrap().update(ctx, dt);
                 StateResult::Void
             } else {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Return) {
@@ -293,6 +298,8 @@ impl States for PlayState {
         let paddle = reg.get_object_mut("paddle".to_owned());
         paddle.unwrap().draw(ctx);
 
+        let ball = reg.get_object_mut("ball".to_owned());
+        ball.unwrap().draw(ctx);
         if self.paused == true {
             let message = ggez::graphics::Text::new((
                 "Game Paused\n\nPress [Enter] To Resume",

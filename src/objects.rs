@@ -5,12 +5,16 @@ use ggez::{self, graphics, Context};
 use std::path::Path;
 
 pub const PADDLE_FLAG: i32 = 0b0000_0000_0000_0000_0001_0000_0000_0000;
-
+pub const BALL_FLAG: i32 = 0b0000_0000_0000_0000_0010_0000_0000_0000;
 pub const BLUE: i32 = 1;
 pub const GREEN: i32 = 2;
 pub const RED: i32 = 4;
 pub const MAGENTA: i32 = 8;
+pub const STAT_1: i32 = 0b0001_0000;
+pub const STAT_2: i32 = 0b0010_0000;
+pub const STAT_3: i32 = 0b0100_0000;
 pub const COLOR_MASK: i32 = 0b1111;
+pub const BALL_MASK: i32 = 0b1111_1111;
 
 pub const SMALL: i32 = 0b0001_0000;
 pub const MEDIUM: i32 = 0b0010_0000;
@@ -24,10 +28,18 @@ pub struct Paddle {
     sprite: Quad,
     size: i32,
     color: i32,
-    current_data: String,
     x: f32,
     y: f32,
     dx: f32,
+}
+
+pub struct Ball {
+    sprite: Quad,
+    color: i32,
+    x: f32,
+    y: f32,
+    dx: f32,
+    dy: f32,
 }
 
 pub trait Object {
@@ -64,10 +76,33 @@ impl Paddle {
             sprite,
             size: MEDIUM,
             color: MAGENTA,
-            current_data: "".to_owned(),
             x: game::VIRTUAL_WIDTH / 2.,
             y: game::VIRTUAL_HEIGHT - 32.,
             dx: 0.,
+        }
+    }
+}
+
+impl Ball {
+    pub fn new(ctx: &mut Context) -> Ball {
+        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
+        sprite.add_sprite(BALL_FLAG + BLUE, 96., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
+
+        sprite.add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
+
+        // 화면 가운데에 위치시킨다.
+        Ball {
+            sprite,
+            color: MAGENTA,
+            x: game::VIRTUAL_WIDTH / 2.,
+            y: game::VIRTUAL_HEIGHT - 32.,
+            dx: 0.,
+            dy: 0.,
         }
     }
 }
@@ -103,6 +138,24 @@ impl Object for Paddle {
         let size = idx & SIZE_MASK;
         if size > 0 {
             self.size = size;
+        }
+    }
+}
+
+impl Object for Ball {
+    fn update(&mut self, _ctx: &mut Context, _dt: f32) {
+        ()
+    }
+
+    fn draw(&mut self, ctx: &mut Context) {
+        self.sprite
+            .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
+    }
+
+    fn set_sprite(&mut self, idx: i32) {
+        let color = idx & BALL_MASK;
+        if color > 0 {
+            self.color = color;
         }
     }
 }
