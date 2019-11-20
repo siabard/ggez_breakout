@@ -6,11 +6,11 @@ use ggez_breakout;
 use ggez_breakout::game::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("Hello World", "siabard");
+    let cb = ggez::ContextBuilder::new("Breakout", "siabard");
     let (ctx, event_loop) = &mut cb
         .add_resource_path("./resources")
         .window_mode(ggez::conf::WindowMode::default().dimensions(WINDOW_WIDTH, WINDOW_HEIGHT))
-        .window_setup(ggez::conf::WindowSetup::default().title("Skeleton: ggez"))
+        .window_setup(ggez::conf::WindowSetup::default().title("Breakout CS50 GGEZ porting"))
         .build()?;
 
     ggez::graphics::set_default_filter(ctx, ggez::graphics::FilterMode::Linear);

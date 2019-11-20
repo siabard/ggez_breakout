@@ -10,11 +10,13 @@ pub const BLUE: i32 = 1;
 pub const GREEN: i32 = 2;
 pub const RED: i32 = 4;
 pub const MAGENTA: i32 = 8;
+pub const COLOR_MASK: i32 = 0b1111;
 
 pub const SMALL: i32 = 0b0001_0000;
 pub const MEDIUM: i32 = 0b0010_0000;
 pub const LARGE: i32 = 0b0100_0000;
 pub const HUGE: i32 = 0b1000_0000;
+pub const SIZE_MASK: i32 = 0b1111_0000;
 
 pub const PADDLE_SPEED: f32 = 200.;
 
@@ -31,6 +33,7 @@ pub struct Paddle {
 pub trait Object {
     fn update(&mut self, ctx: &mut Context, dt: f32);
     fn draw(&mut self, ctx: &mut Context);
+    fn set_sprite(&mut self, idx: i32);
 }
 
 impl Paddle {
@@ -90,5 +93,16 @@ impl Object for Paddle {
     fn draw(&mut self, ctx: &mut Context) {
         self.sprite
             .draw_sprite(ctx, PADDLE_FLAG + self.color + self.size, self.x, self.y);
+    }
+
+    fn set_sprite(&mut self, idx: i32) {
+        let color = idx & COLOR_MASK;
+        if color > 0 {
+            self.color = color;
+        }
+        let size = idx & SIZE_MASK;
+        if size > 0 {
+            self.size = size;
+        }
     }
 }

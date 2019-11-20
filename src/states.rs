@@ -4,7 +4,7 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
-use crate::objects::Paddle;
+use crate::objects::{self, Paddle};
 use crate::reg::Reg;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -231,6 +231,30 @@ impl PlayState {
 }
 impl States for PlayState {
     fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32) -> StateResult {
+        let color: i32 = if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key1) {
+            objects::BLUE
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key2) {
+            objects::RED
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key3) {
+            objects::GREEN
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key4) {
+            objects::MAGENTA
+        } else {
+            0
+        };
+
+        let size: i32 = if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key5) {
+            objects::SMALL
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key6) {
+            objects::MEDIUM
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key7) {
+            objects::LARGE
+        } else if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Key8) {
+            objects::HUGE
+        } else {
+            0
+        };
+
         if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::X) {
             reg.clear_font();
             StateResult::PopState
@@ -241,6 +265,13 @@ impl States for PlayState {
                 }
 
                 // paddle 처리
+                let paddle = reg.get_object_mut("paddle".to_owned());
+                if color != 0 || size != 0 {
+                    paddle
+                        .unwrap()
+                        .set_sprite(objects::PADDLE_FLAG + color + size);
+                }
+
                 let paddle = reg.get_object_mut("paddle".to_owned());
                 paddle.unwrap().update(ctx, dt);
                 StateResult::Void
