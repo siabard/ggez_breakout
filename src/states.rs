@@ -279,6 +279,7 @@ impl States for PlayState {
                 // 공처리
                 let ball = reg.get_object_mut("ball".to_owned());
                 ball.unwrap().update(ctx, dt);
+
                 StateResult::Void
             } else {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Return) {

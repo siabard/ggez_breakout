@@ -28,27 +28,58 @@ pub struct Paddle {
     sprite: Quad,
     size: i32,
     color: i32,
-    x: f32,
-    y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
     dx: f32,
 }
 
 pub struct Ball {
     sprite: Quad,
     color: i32,
-    x: f32,
-    y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
     dx: f32,
     dy: f32,
+}
+
+/// AABB Collide
+pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> bool {
+    let a_xywh = a.get_xywh();
+    let b_xywh = b.get_xywh();
+
+    if (a_xywh.0 < b_xywh.0 + b_xywh.2)
+        && (a_xywh.0 + a_xywh.2 > b_xywh.0)
+        && (a_xywh.1 < b_xywh.1 + b_xywh.3)
+        && (a_xywh.1 + a_xywh.3 > b_xywh.1)
+    {
+        true
+    } else {
+        false
+    }
 }
 
 pub trait Object {
     fn update(&mut self, ctx: &mut Context, dt: f32);
     fn draw(&mut self, ctx: &mut Context);
     fn set_sprite(&mut self, idx: i32);
+    fn get_xywh(&self) -> (f32, f32, f32, f32);
 }
 
 impl Paddle {
+    fn get_width(&self) -> f32 {
+        match self.size {
+            SMALL => 32.,
+            MEDIUM => 64.,
+            LARGE => 96.,
+            HUGE => 128.,
+            _ => 32.,
+        }
+    }
+
     pub fn new(ctx: &mut Context) -> Paddle {
         let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
         sprite.add_sprite(PADDLE_FLAG + BLUE + SMALL, 0., 64., 32., 16.);
@@ -78,6 +109,8 @@ impl Paddle {
             color: MAGENTA,
             x: game::VIRTUAL_WIDTH / 2.,
             y: game::VIRTUAL_HEIGHT - 32.,
+            width: 64.,
+            height: 16.,
             dx: 0.,
         }
     }
@@ -100,9 +133,11 @@ impl Ball {
             sprite,
             color: MAGENTA,
             x: game::VIRTUAL_WIDTH / 2.,
-            y: game::VIRTUAL_HEIGHT - 32.,
-            dx: 0.,
-            dy: 0.,
+            y: 32.,
+            width: 8.,
+            height: 8.,
+            dx: 2.,
+            dy: 2.,
         }
     }
 }
@@ -140,11 +175,23 @@ impl Object for Paddle {
             self.size = size;
         }
     }
+
+    fn get_xywh(&self) -> (f32, f32, f32, f32) {
+        (self.x, self.y, self.width, self.height)
+    }
 }
 
 impl Object for Ball {
     fn update(&mut self, _ctx: &mut Context, _dt: f32) {
-        ()
+        if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
+            self.dx = -self.dx;
+        }
+        if (self.y < 0. || self.y > game::VIRTUAL_HEIGHT) {
+            self.dy = -self.dy;
+        }
+
+        self.x += self.dx;
+        self.y += self.dy;
     }
 
     fn draw(&mut self, ctx: &mut Context) {
@@ -157,5 +204,9 @@ impl Object for Ball {
         if color > 0 {
             self.color = color;
         }
+    }
+
+    fn get_xywh(&self) -> (f32, f32, f32, f32) {
+        (self.x, self.y, self.width, self.height)
     }
 }
