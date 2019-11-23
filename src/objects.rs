@@ -32,7 +32,7 @@ pub struct Paddle {
     pub height: f32,
     pub x: f32,
     pub y: f32,
-    dx: f32,
+    pub dx: f32,
 }
 
 pub struct Ball {
@@ -42,8 +42,8 @@ pub struct Ball {
     pub height: f32,
     pub x: f32,
     pub y: f32,
-    dx: f32,
-    dy: f32,
+    pub dx: f32,
+    pub dy: f32,
 }
 
 /// AABB Collide

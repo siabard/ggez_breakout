@@ -4,7 +4,7 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
-use crate::objects::{self, Ball, Paddle};
+use crate::objects::{self, Ball, Object, Paddle};
 use crate::reg::Reg;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -224,9 +224,9 @@ impl PlayState {
 
         reg.add_font("default".to_owned(), default_font);
 
-        reg.add_object("paddle".to_owned(), Box::new(Paddle::new(ctx)));
+        reg.add_paddle("paddle".to_owned(), Box::new(Paddle::new(ctx)));
 
-        reg.add_object("ball".to_owned(), Box::new(Ball::new(ctx)));
+        reg.add_ball("ball".to_owned(), Box::new(Ball::new(ctx)));
         PlayState { paused: false }
     }
 }
@@ -266,20 +266,29 @@ impl States for PlayState {
                 }
 
                 // paddle 처리
-                let paddle = reg.get_object_mut("paddle".to_owned());
+                let paddle = reg.get_paddle_mut("paddle".to_owned());
                 if color != 0 || size != 0 {
                     paddle
                         .unwrap()
                         .set_sprite(objects::PADDLE_FLAG + color + size);
                 }
 
-                let paddle = reg.get_object_mut("paddle".to_owned());
+                let paddle = reg.get_paddle_mut("paddle".to_owned());
                 paddle.unwrap().update(ctx, dt);
 
                 // 공처리
-                let ball = reg.get_object_mut("ball".to_owned());
+                let ball = reg.get_ball_mut("ball".to_owned());
                 ball.unwrap().update(ctx, dt);
 
+                // 두 물체의 충돌처리
+                let paddle: &Paddle = &*(reg.get_paddle("paddle".to_owned()).unwrap());
+                let ball: &Ball = &*(reg.get_ball("ball".to_owned()).unwrap());
+
+                if objects::collide_aabb(paddle, ball) {
+                    let ball = reg.get_ball_mut("ball".to_owned()).unwrap();
+                    ball.dy = -ball.dy;
+                    println!("collide");
+                }
                 StateResult::Void
             } else {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Return) {
@@ -296,10 +305,10 @@ impl States for PlayState {
 
         graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
 
-        let paddle = reg.get_object_mut("paddle".to_owned());
+        let paddle = reg.get_paddle_mut("paddle".to_owned());
         paddle.unwrap().draw(ctx);
 
-        let ball = reg.get_object_mut("ball".to_owned());
+        let ball = reg.get_ball_mut("ball".to_owned());
         ball.unwrap().draw(ctx);
         if self.paused == true {
             let message = ggez::graphics::Text::new((
