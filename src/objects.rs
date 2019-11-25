@@ -49,8 +49,17 @@ pub struct Ball {
     pub dy: f32,
 }
 
+#[derive(PartialEq, Debug)]
+pub enum CollideFlag {
+    TOP,
+    BOTTOM,
+    LEFT,
+    RIGHT,
+    NONE,
+}
+
 /// AABB Collide
-pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> bool {
+pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> Vec<CollideFlag> {
     let a_xywh = a.get_xywh();
     let b_xywh = b.get_xywh();
 
@@ -59,9 +68,31 @@ pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> bool {
         && (a_xywh.1 < b_xywh.1 + b_xywh.3)
         && (a_xywh.1 + a_xywh.3 > b_xywh.1)
     {
-        true
+        // 충돌시에 어느 면에 부딪히는지를 알려준다.
+        // a.x < b.x -> LEFT
+        // a.x > b.x -> RIGHT
+        // a.y < b.y -> BOTTOM
+        // a.y > b.y -> TOP
+        let mut vec = Vec::<CollideFlag>::new();
+        if a_xywh.0 < b_xywh.0 {
+            vec.push(CollideFlag::LEFT);
+        }
+
+        if a_xywh.0 > b_xywh.0 {
+            vec.push(CollideFlag::RIGHT);
+        }
+
+        if a_xywh.1 < b_xywh.1 {
+            vec.push(CollideFlag::BOTTOM);
+        }
+
+        if a_xywh.1 > b_xywh.1 {
+            vec.push(CollideFlag::TOP);
+        }
+
+        vec
     } else {
-        false
+        vec![]
     }
 }
 

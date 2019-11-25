@@ -389,7 +389,9 @@ impl States for PlayState {
 
                 // 두 물체의 충돌처리
 
-                if objects::collide_aabb(&self.paddle, &self.ball) {
+                let collide = objects::collide_aabb(&self.paddle, &self.ball);
+                println!("COLLIDE: {:?}", collide);
+                if collide.contains(&CollideFlag::TOP) {
                     self.ball.dy = -self.ball.dy;
                     let sound = reg.get_sound_mut("paddle-hit".to_owned()).unwrap();
                     play_sound_once(sound);
