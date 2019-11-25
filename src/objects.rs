@@ -219,13 +219,13 @@ impl Object for Ball {
     fn update(&mut self, _ctx: &mut Context, reg: &mut Reg, _dt: f32) {
         if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
             self.dx = -self.dx;
-            let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
-            play_sound_once(sound);
+            //let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
+            play_sound_once(&"wall-hit".to_owned(), reg);
         }
         if (self.y < 0. || self.y > game::VIRTUAL_HEIGHT) {
             self.dy = -self.dy;
-            let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
-            play_sound_once(sound);
+            //let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
+            play_sound_once(&"wall-hit".to_owned(), reg);
         }
 
         self.x += self.dx;
@@ -251,17 +251,19 @@ impl Object for Ball {
 
 pub struct Block {
     sprite: Quad,
-    color: i32,
+    pub color: i32,
+    pub tier: i32,
     pub width: f32,
     pub height: f32,
     pub x: f32,
     pub y: f32,
     pub dx: f32,
     pub dy: f32,
+    pub inplay: bool,
 }
 
 impl Block {
-    pub fn new(ctx: &mut Context) -> Block {
+    pub fn new(ctx: &mut Context, ox: f32, oy: f32) -> Block {
         let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
 
         // 블럭 종류는 총 21개임
@@ -279,44 +281,41 @@ impl Block {
             }
         }
 
-        sprite.add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
-
-        sprite.add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
-
         // Block 설치하기
         Block {
             sprite,
-            color: MAGENTA,
-            x: game::VIRTUAL_WIDTH / 2.,
-            y: 32.,
-            width: 8.,
-            height: 8.,
-            dx: 2.,
-            dy: 2.,
+            color: 1,
+            tier: 0,
+            x: ox,
+            y: oy,
+            width: 32.,
+            height: 16.,
+            dx: 0.,
+            dy: 0.,
+            inplay: true,
         }
+    }
+
+    pub fn hit(&mut self, reg: &mut Reg) {
+        self.inplay = false;
+        play_sound(&"brick-hit-2".to_owned(), reg);
     }
 }
 
 impl Object for Block {
     fn update(&mut self, _ctx: &mut Context, _reg: &mut Reg, _dt: f32) {
-        if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
-            self.dx = -self.dx;
-        }
-        if (self.y < 0. || self.y > game::VIRTUAL_HEIGHT) {
-            self.dy = -self.dy;
-        }
-
-        self.x += self.dx;
-        self.y += self.dy;
+        ()
     }
 
     fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
-        self.sprite
-            .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
+        if self.inplay {
+            self.sprite.draw_sprite(
+                ctx,
+                BLOCK_FLAG + 1 + (self.color - 1) * 4 + self.tier,
+                self.x,
+                self.y,
+            );
+        }
     }
 
     fn set_sprite(&mut self, idx: i32) {
