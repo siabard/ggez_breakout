@@ -1,11 +1,14 @@
 use crate::game;
 use crate::quad::Quad;
+use crate::reg::Reg;
+use crate::states::{play_sound, play_sound_once};
 
 use ggez::{self, graphics, Context};
 use std::path::Path;
 
 pub const PADDLE_FLAG: i32 = 0b0000_0000_0000_0000_0001_0000_0000_0000;
 pub const BALL_FLAG: i32 = 0b0000_0000_0000_0000_0010_0000_0000_0000;
+pub const BLOCK_FLAG: i32 = 0b0000_0000_0000_0000_0100_0000_0000_0000;
 pub const BLUE: i32 = 1;
 pub const GREEN: i32 = 2;
 pub const RED: i32 = 4;
@@ -63,8 +66,8 @@ pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> bool {
 }
 
 pub trait Object {
-    fn update(&mut self, ctx: &mut Context, dt: f32);
-    fn draw(&mut self, ctx: &mut Context);
+    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32);
+    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg);
     fn set_sprite(&mut self, idx: i32);
     fn get_xywh(&self) -> (f32, f32, f32, f32);
 }
@@ -143,7 +146,7 @@ impl Ball {
 }
 
 impl Object for Paddle {
-    fn update(&mut self, ctx: &mut Context, dt: f32) {
+    fn update(&mut self, ctx: &mut Context, _reg: &mut Reg, dt: f32) {
         if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::Left) {
             self.dx = -1. * PADDLE_SPEED;
         } else if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::Right)
@@ -160,7 +163,7 @@ impl Object for Paddle {
         }
     }
 
-    fn draw(&mut self, ctx: &mut Context) {
+    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
         self.sprite
             .draw_sprite(ctx, PADDLE_FLAG + self.color + self.size, self.x, self.y);
     }
@@ -182,7 +185,93 @@ impl Object for Paddle {
 }
 
 impl Object for Ball {
-    fn update(&mut self, _ctx: &mut Context, _dt: f32) {
+    fn update(&mut self, _ctx: &mut Context, reg: &mut Reg, _dt: f32) {
+        if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
+            self.dx = -self.dx;
+            let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
+            play_sound_once(sound);
+        }
+        if (self.y < 0. || self.y > game::VIRTUAL_HEIGHT) {
+            self.dy = -self.dy;
+            let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
+            play_sound_once(sound);
+        }
+
+        self.x += self.dx;
+        self.y += self.dy;
+    }
+
+    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
+        self.sprite
+            .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
+    }
+
+    fn set_sprite(&mut self, idx: i32) {
+        let color = idx & BALL_MASK;
+        if color > 0 {
+            self.color = color;
+        }
+    }
+
+    fn get_xywh(&self) -> (f32, f32, f32, f32) {
+        (self.x, self.y, self.width, self.height)
+    }
+}
+
+pub struct Block {
+    sprite: Quad,
+    color: i32,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub dx: f32,
+    pub dy: f32,
+}
+
+impl Block {
+    pub fn new(ctx: &mut Context) -> Block {
+        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
+
+        // 블럭 종류는 총 21개임
+        let mut x: f32 = 0.;
+        let mut y: f32 = 0.;
+
+        for i in 1..22 {
+            sprite.add_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
+
+            if i % 6 == 0 {
+                x = 0.;
+                y = y + 16.;
+            } else {
+                x = x + 32.;
+            }
+        }
+
+        sprite.add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
+
+        sprite.add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
+
+        // Block 설치하기
+        Block {
+            sprite,
+            color: MAGENTA,
+            x: game::VIRTUAL_WIDTH / 2.,
+            y: 32.,
+            width: 8.,
+            height: 8.,
+            dx: 2.,
+            dy: 2.,
+        }
+    }
+}
+
+impl Object for Block {
+    fn update(&mut self, _ctx: &mut Context, _reg: &mut Reg, _dt: f32) {
         if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
             self.dx = -self.dx;
         }
@@ -194,7 +283,7 @@ impl Object for Ball {
         self.y += self.dy;
     }
 
-    fn draw(&mut self, ctx: &mut Context) {
+    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
         self.sprite
             .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
     }

@@ -4,7 +4,9 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
+use crate::objects::*;
 use crate::objects::{self, Ball, Object, Paddle};
+use crate::quad::Quad;
 use crate::reg::Reg;
 use ggez::audio;
 use ggez::audio::SoundSource;
@@ -13,6 +15,7 @@ use ggez::input::keyboard::KeyCode;
 use ggez::nalgebra as na;
 use ggez::Context;
 use std::collections::HashMap;
+use std::path::Path;
 
 pub enum StateResult {
     PushState(Box<dyn States>),
@@ -24,6 +27,13 @@ pub enum StateResult {
 pub trait States {
     fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32) -> StateResult;
     fn render(&mut self, ctx: &mut Context, reg: &mut Reg, buffer: &mut Canvas) -> StateResult;
+}
+
+pub fn play_sound_once(sound: &mut audio::Source) {
+    if sound.playing() == false {
+        sound.set_repeat(false);
+        sound.play();
+    }
 }
 
 pub fn play_sound(sound: &mut audio::Source) {
@@ -216,6 +226,9 @@ impl States for PauseState {
 
 pub struct PlayState {
     paused: bool,
+    paddle: Paddle,
+    ball: Ball,
+    sprites: HashMap<String, Quad>,
 }
 
 impl PlayState {
@@ -224,10 +237,104 @@ impl PlayState {
 
         reg.add_font("default".to_owned(), default_font);
 
-        reg.add_paddle("paddle".to_owned(), Box::new(Paddle::new(ctx)));
+        let paddle = Paddle::new(ctx);
 
-        reg.add_ball("ball".to_owned(), Box::new(Ball::new(ctx)));
-        PlayState { paused: false }
+        let ball = Ball::new(ctx);
+
+        // 배경 음악
+        reg.add_sound(
+            "music".to_owned(),
+            audio::Source::new(ctx, "/music.wav").unwrap(),
+        );
+
+        // 효과음
+        reg.add_sound(
+            "paddle-hit".to_owned(),
+            audio::Source::new(ctx, "/paddle_hit.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "score".to_owned(),
+            audio::Source::new(ctx, "/score.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "wall-hit".to_owned(),
+            audio::Source::new(ctx, "/wall_hit.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "brick-hit-1".to_owned(),
+            audio::Source::new(ctx, "/brick-hit-1.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "brick-hit-2".to_owned(),
+            audio::Source::new(ctx, "/brick-hit-2.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "hurt".to_owned(),
+            audio::Source::new(ctx, "/hurt.wav").unwrap(),
+        );
+
+        reg.add_sound(
+            "victory".to_owned(),
+            audio::Source::new(ctx, "/victory.wav").unwrap(),
+        );
+        reg.add_sound(
+            "recover".to_owned(),
+            audio::Source::new(ctx, "/recover.wav").unwrap(),
+        );
+        reg.add_sound(
+            "high-score".to_owned(),
+            audio::Source::new(ctx, "/high_score.wav").unwrap(),
+        );
+        reg.add_sound(
+            "pause".to_owned(),
+            audio::Source::new(ctx, "/pause.wav").unwrap(),
+        );
+
+        let music = reg.get_sound_mut("music".to_owned()).unwrap();
+        music.set_repeat(true);
+        play_sound(music);
+
+        // 블럭을 담기위한 스프라이트
+        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
+
+        // 블럭 종류는 총 21개임
+        let mut x: f32 = 0.;
+        let mut y: f32 = 0.;
+
+        for i in 1..22 {
+            sprite.add_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
+
+            if i % 6 == 0 {
+                x = 0.;
+                y = y + 16.;
+            } else {
+                x = x + 32.;
+            }
+        }
+
+        sprite.add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
+
+        sprite.add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
+        sprite.add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
+
+        let mut sprites = HashMap::<String, Quad>::new();
+
+        sprites.insert("block".to_owned(), sprite);
+
+        PlayState {
+            paused: false,
+            paddle,
+            ball,
+            sprites,
+        }
     }
 }
 impl States for PlayState {
@@ -263,36 +370,37 @@ impl States for PlayState {
             if self.paused == false {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::P) {
                     self.paused = true;
+
+                    let music = reg.get_sound_mut("music".to_owned()).unwrap();
+                    music.stop();
+
+                    let sound = reg.get_sound_mut("pause".to_owned()).unwrap();
+                    play_sound_once(sound);
                 }
 
                 // paddle 처리
-                let paddle = reg.get_paddle_mut("paddle".to_owned());
                 if color != 0 || size != 0 {
-                    paddle
-                        .unwrap()
-                        .set_sprite(objects::PADDLE_FLAG + color + size);
+                    self.paddle.set_sprite(objects::PADDLE_FLAG + color + size);
                 }
-
-                let paddle = reg.get_paddle_mut("paddle".to_owned());
-                paddle.unwrap().update(ctx, dt);
+                self.paddle.update(ctx, reg, dt);
 
                 // 공처리
-                let ball = reg.get_ball_mut("ball".to_owned());
-                ball.unwrap().update(ctx, dt);
+                self.ball.update(ctx, reg, dt);
 
                 // 두 물체의 충돌처리
-                let paddle: &Paddle = &*(reg.get_paddle("paddle".to_owned()).unwrap());
-                let ball: &Ball = &*(reg.get_ball("ball".to_owned()).unwrap());
 
-                if objects::collide_aabb(paddle, ball) {
-                    let ball = reg.get_ball_mut("ball".to_owned()).unwrap();
-                    ball.dy = -ball.dy;
-                    println!("collide");
+                if objects::collide_aabb(&self.paddle, &self.ball) {
+                    self.ball.dy = -self.ball.dy;
+                    let sound = reg.get_sound_mut("paddle-hit".to_owned()).unwrap();
+                    play_sound_once(sound);
                 }
                 StateResult::Void
             } else {
                 if ggez::input::keyboard::is_key_pressed(ctx, KeyCode::Return) {
                     self.paused = false;
+                    let music = reg.get_sound_mut("music".to_owned()).unwrap();
+                    music.set_repeat(true);
+                    play_sound(music);
                 }
 
                 StateResult::Void
@@ -305,11 +413,9 @@ impl States for PlayState {
 
         graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
 
-        let paddle = reg.get_paddle_mut("paddle".to_owned());
-        paddle.unwrap().draw(ctx);
+        self.paddle.draw(ctx, reg);
 
-        let ball = reg.get_ball_mut("ball".to_owned());
-        ball.unwrap().draw(ctx);
+        self.ball.draw(ctx, reg);
         if self.paused == true {
             let message = ggez::graphics::Text::new((
                 "Game Paused\n\nPress [Enter] To Resume",

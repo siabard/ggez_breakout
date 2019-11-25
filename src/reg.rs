@@ -15,8 +15,6 @@ pub struct Reg {
     pub key_status: HashMap<KeyCode, bool>,
     pub objects: HashMap<String, Box<dyn Object>>,
     pub f32_values: HashMap<String, f32>,
-    pub paddles: HashMap<String, Box<Paddle>>,
-    pub balls: HashMap<String, Box<Ball>>,
 }
 
 impl Reg {
@@ -29,8 +27,6 @@ impl Reg {
             key_status: HashMap::<KeyCode, bool>::new(),
             objects: HashMap::<String, Box<dyn Object>>::new(),
             f32_values: HashMap::<String, f32>::new(),
-            paddles: HashMap::<String, Box<Paddle>>::new(),
-            balls: HashMap::<String, Box<Ball>>::new(),
         }
     }
 
@@ -121,29 +117,5 @@ impl Reg {
 
     pub fn clear_objects(&mut self) {
         self.objects.clear();
-    }
-
-    pub fn add_paddle(&mut self, key: String, paddle: Box<Paddle>) {
-        self.paddles.insert(key, paddle);
-    }
-
-    pub fn get_paddle(&self, key: String) -> Option<&Box<Paddle>> {
-        self.paddles.get(&key)
-    }
-
-    pub fn get_paddle_mut(&mut self, key: String) -> Option<&mut Box<Paddle>> {
-        self.paddles.get_mut(&key)
-    }
-
-    pub fn add_ball(&mut self, key: String, ball: Box<Ball>) {
-        self.balls.insert(key, ball);
-    }
-
-    pub fn get_ball(&self, key: String) -> Option<&Box<Ball>> {
-        self.balls.get(&key)
-    }
-
-    pub fn get_ball_mut(&mut self, key: String) -> Option<&mut Box<Ball>> {
-        self.balls.get_mut(&key)
     }
 }
