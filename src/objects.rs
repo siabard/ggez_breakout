@@ -252,7 +252,6 @@ impl Object for Ball {
     }
 }
 
-#[derive(Debug)]
 pub struct Block {
     pub color: i32,
     pub tier: i32,

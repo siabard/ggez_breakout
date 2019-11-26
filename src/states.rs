@@ -319,7 +319,6 @@ impl PlayState {
 
         let mut blocks = level_maker::create_map(ctx, reg, 1);
 
-        println!("{:?}", blocks);
         PlayState {
             paused: false,
             paddle,
