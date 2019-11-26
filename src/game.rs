@@ -17,6 +17,8 @@ use crate::reg::Reg;
 use crate::states;
 use crate::states::StateResult;
 
+use std::path::Path;
+
 /// 실제 물리적 해상도
 pub const WINDOW_WIDTH: f32 = 1280.;
 pub const WINDOW_HEIGHT: f32 = 720.;
@@ -46,7 +48,7 @@ impl Game {
         // 초기에는 InitState를 넣는다.
 
         let mut reg = Reg::new();
-
+        reg.init_sprite(ctx, Path::new("/breakout.png"));
         let init_state = states::InitState::new(ctx, &mut reg);
 
         let buffer = ggez::graphics::Canvas::new(

@@ -28,7 +28,6 @@ pub const SIZE_MASK: i32 = 0b1111_0000;
 pub const PADDLE_SPEED: f32 = 200.;
 
 pub struct Paddle {
-    sprite: Quad,
     size: i32,
     color: i32,
     pub width: f32,
@@ -39,7 +38,6 @@ pub struct Paddle {
 }
 
 pub struct Ball {
-    sprite: Quad,
     color: i32,
     pub width: f32,
     pub height: f32,
@@ -114,31 +112,31 @@ impl Paddle {
         }
     }
 
-    pub fn new(ctx: &mut Context) -> Paddle {
-        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
-        sprite.add_sprite(PADDLE_FLAG + BLUE + SMALL, 0., 64., 32., 16.);
-        sprite.add_sprite(PADDLE_FLAG + BLUE + MEDIUM, 32., 64., 64., 16.);
-        sprite.add_sprite(PADDLE_FLAG + BLUE + LARGE, 96., 64., 96., 16.);
-        sprite.add_sprite(PADDLE_FLAG + BLUE + HUGE, 0., 80., 128., 16.);
+    pub fn new(ctx: &mut Context, reg: &mut Reg) -> Paddle {
+        if let Some(sprite) = &mut (reg.sprites) {
+            (*sprite).add_sprite(PADDLE_FLAG + BLUE + SMALL, 0., 64., 32., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + BLUE + MEDIUM, 32., 64., 64., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + BLUE + LARGE, 96., 64., 96., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + BLUE + HUGE, 0., 80., 128., 16.);
 
-        sprite.add_sprite(PADDLE_FLAG + GREEN + SMALL, 0., 96., 32., 16.);
-        sprite.add_sprite(PADDLE_FLAG + GREEN + MEDIUM, 32., 96., 64., 16.);
-        sprite.add_sprite(PADDLE_FLAG + GREEN + LARGE, 96., 96., 96., 16.);
-        sprite.add_sprite(PADDLE_FLAG + GREEN + HUGE, 0., 112., 128., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + GREEN + SMALL, 0., 96., 32., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + GREEN + MEDIUM, 32., 96., 64., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + GREEN + LARGE, 96., 96., 96., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + GREEN + HUGE, 0., 112., 128., 16.);
 
-        sprite.add_sprite(PADDLE_FLAG + RED + SMALL, 0., 128., 32., 16.);
-        sprite.add_sprite(PADDLE_FLAG + RED + MEDIUM, 32., 128., 64., 16.);
-        sprite.add_sprite(PADDLE_FLAG + RED + LARGE, 96., 128., 96., 16.);
-        sprite.add_sprite(PADDLE_FLAG + RED + HUGE, 0., 144., 128., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + RED + SMALL, 0., 128., 32., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + RED + MEDIUM, 32., 128., 64., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + RED + LARGE, 96., 128., 96., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + RED + HUGE, 0., 144., 128., 16.);
 
-        sprite.add_sprite(PADDLE_FLAG + MAGENTA + SMALL, 0., 160., 32., 16.);
-        sprite.add_sprite(PADDLE_FLAG + MAGENTA + MEDIUM, 32., 160., 64., 16.);
-        sprite.add_sprite(PADDLE_FLAG + MAGENTA + LARGE, 96., 160., 96., 16.);
-        sprite.add_sprite(PADDLE_FLAG + MAGENTA + HUGE, 0., 176., 128., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + SMALL, 0., 160., 32., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + MEDIUM, 32., 160., 64., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + LARGE, 96., 160., 96., 16.);
+            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + HUGE, 0., 176., 128., 16.);
+        }
 
         // 화면 가운데에 위치시킨다.
         Paddle {
-            sprite,
             size: MEDIUM,
             color: MAGENTA,
             x: game::VIRTUAL_WIDTH / 2.,
@@ -151,20 +149,19 @@ impl Paddle {
 }
 
 impl Ball {
-    pub fn new(ctx: &mut Context) -> Ball {
-        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
-        sprite.add_sprite(BALL_FLAG + BLUE, 96., 48., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
+    pub fn new(ctx: &mut Context, reg: &mut Reg) -> Ball {
+        if let Some(sprite) = &mut (reg.sprites) {
+            (*sprite).add_sprite(BALL_FLAG + BLUE, 96., 48., 8., 8.);
+            (*sprite).add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
+            (*sprite).add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
+            (*sprite).add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
 
-        sprite.add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
-        sprite.add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
-
+            (*sprite).add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
+            (*sprite).add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
+            (*sprite).add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
+        }
         // 화면 가운데에 위치시킨다.
         Ball {
-            sprite,
             color: MAGENTA,
             x: game::VIRTUAL_WIDTH / 2.,
             y: 32.,
@@ -194,9 +191,13 @@ impl Object for Paddle {
         }
     }
 
-    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
-        self.sprite
-            .draw_sprite(ctx, PADDLE_FLAG + self.color + self.size, self.x, self.y);
+    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
+        reg.sprites.as_mut().unwrap().draw_sprite(
+            ctx,
+            PADDLE_FLAG + self.color + self.size,
+            self.x,
+            self.y,
+        );
     }
 
     fn set_sprite(&mut self, idx: i32) {
@@ -232,8 +233,10 @@ impl Object for Ball {
         self.y += self.dy;
     }
 
-    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
-        self.sprite
+    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
+        reg.sprites
+            .as_mut()
+            .unwrap()
             .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
     }
 
@@ -249,8 +252,8 @@ impl Object for Ball {
     }
 }
 
+#[derive(Debug)]
 pub struct Block {
-    sprite: Quad,
     pub color: i32,
     pub tier: i32,
     pub width: f32,
@@ -263,27 +266,26 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(ctx: &mut Context, ox: f32, oy: f32) -> Block {
-        let mut sprite = Quad::new(ctx, Path::new("/breakout.png"));
+    pub fn new(ctx: &mut Context, reg: &mut Reg, ox: f32, oy: f32) -> Block {
+        if let Some(sprite) = &mut (reg.sprites) {
+            // 블럭 종류는 총 21개임
+            let mut x: f32 = 0.;
+            let mut y: f32 = 0.;
 
-        // 블럭 종류는 총 21개임
-        let mut x: f32 = 0.;
-        let mut y: f32 = 0.;
+            for i in 1..22 {
+                (*sprite).add_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
 
-        for i in 1..22 {
-            sprite.add_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
-
-            if i % 6 == 0 {
-                x = 0.;
-                y = y + 16.;
-            } else {
-                x = x + 32.;
+                if i % 6 == 0 {
+                    x = 0.;
+                    y = y + 16.;
+                } else {
+                    x = x + 32.;
+                }
             }
         }
 
         // Block 설치하기
         Block {
-            sprite,
             color: 1,
             tier: 0,
             x: ox,
@@ -307,9 +309,9 @@ impl Object for Block {
         ()
     }
 
-    fn draw(&mut self, ctx: &mut Context, _reg: &mut Reg) {
+    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
         if self.inplay {
-            self.sprite.draw_sprite(
+            reg.sprites.as_mut().unwrap().draw_sprite(
                 ctx,
                 BLOCK_FLAG + 1 + (self.color - 1) * 4 + self.tier,
                 self.x,

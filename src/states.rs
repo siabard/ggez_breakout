@@ -4,6 +4,7 @@
 //! MenuState : 메뉴 상태
 
 use crate::game::{self, Game};
+use crate::level_maker;
 use crate::objects::*;
 use crate::objects::{self, Ball, Block, Object, Paddle};
 use crate::quad::Quad;
@@ -254,9 +255,9 @@ impl PlayState {
 
         reg.add_font("default".to_owned(), default_font);
 
-        let paddle = Paddle::new(ctx);
+        let paddle = Paddle::new(ctx, reg);
 
-        let ball = Ball::new(ctx);
+        let ball = Ball::new(ctx, reg);
 
         // 배경 음악
         reg.add_sound(
@@ -316,10 +317,9 @@ impl PlayState {
 
         // 블럭 초기화하기
 
-        let mut blocks = Vec::<Block>::new();
-        blocks.push(Block::new(ctx, 110., 10.));
-        blocks.push(Block::new(ctx, 142., 10.));
+        let mut blocks = level_maker::create_map(ctx, reg, 1);
 
+        println!("{:?}", blocks);
         PlayState {
             paused: false,
             paddle,
@@ -392,21 +392,23 @@ impl States for PlayState {
 
                 // 블럭하고 충돌처리
                 for block in self.blocks.iter_mut() {
-                    let collide = objects::collide_aabb(&self.ball, block);
-                    if collide.len() > 0 {
-                        block.hit(reg);
+                    if block.inplay == true {
+                        let collide = objects::collide_aabb(&self.ball, block);
+                        if collide.len() > 0 {
+                            block.hit(reg);
 
-                        // 공 상단 / 하단
-                        if collide.contains(&CollideFlag::TOP) && self.ball.dy < 0.
-                            || collide.contains(&CollideFlag::BOTTOM) && self.ball.dy > 0.
-                        {
-                            self.ball.dy = -self.ball.dy;
-                        }
-                        // 공 좌측 / 우측
-                        if collide.contains(&CollideFlag::LEFT) && self.ball.dx < 0.
-                            || collide.contains(&CollideFlag::RIGHT) && self.ball.dx > 0.
-                        {
-                            self.ball.dx = -self.ball.dx;
+                            // 공 상단 / 하단
+                            if collide.contains(&CollideFlag::TOP) && self.ball.dy < 0.
+                                || collide.contains(&CollideFlag::BOTTOM) && self.ball.dy > 0.
+                            {
+                                self.ball.dy = -self.ball.dy;
+                            }
+                            // 공 좌측 / 우측
+                            if collide.contains(&CollideFlag::LEFT) && self.ball.dx < 0.
+                                || collide.contains(&CollideFlag::RIGHT) && self.ball.dx > 0.
+                            {
+                                self.ball.dx = -self.ball.dx;
+                            }
                         }
                     }
                 }

@@ -1,11 +1,13 @@
-use crate::objects::Object;
-use crate::objects::{Ball, Paddle};
+use crate::objects::{Ball, Object, Paddle};
+use crate::quad::Quad;
 use crate::states;
 use ggez;
 use ggez::audio;
 use ggez::graphics;
 use ggez::input::keyboard::KeyCode;
+use ggez::Context;
 use std::collections::HashMap;
+use std::path::Path;
 
 pub struct Reg {
     pub sounds: HashMap<String, audio::Source>,
@@ -15,6 +17,7 @@ pub struct Reg {
     pub key_status: HashMap<KeyCode, bool>,
     pub objects: HashMap<String, Box<dyn Object>>,
     pub f32_values: HashMap<String, f32>,
+    pub sprites: Option<Quad>,
 }
 
 impl Reg {
@@ -27,6 +30,23 @@ impl Reg {
             key_status: HashMap::<KeyCode, bool>::new(),
             objects: HashMap::<String, Box<dyn Object>>::new(),
             f32_values: HashMap::<String, f32>::new(),
+            sprites: None,
+        }
+    }
+
+    // sprites 초기화
+    pub fn init_sprite(&mut self, ctx: &mut Context, path: &Path) {
+        self.sprites = Some(Quad::new(ctx, path));
+    }
+
+    // sprites를 등록하기
+    pub fn register_sprite(&mut self, key: i32, x: f32, y: f32, w: f32, h: f32) {
+        match &mut self.sprites {
+            Some(sp) => {
+                (*sp).add_sprite(key, x, y, w, h);
+                ()
+            }
+            None => (),
         }
     }
 
