@@ -397,14 +397,14 @@ impl States for PlayState {
                         block.hit(reg);
 
                         // 공 상단 / 하단
-                        if collide.contains(&CollideFlag::TOP)
-                            || collide.contains(&CollideFlag::BOTTOM)
+                        if collide.contains(&CollideFlag::TOP) && self.ball.dy < 0.
+                            || collide.contains(&CollideFlag::BOTTOM) && self.ball.dy > 0.
                         {
                             self.ball.dy = -self.ball.dy;
                         }
                         // 공 좌측 / 우측
-                        if collide.contains(&CollideFlag::LEFT)
-                            || collide.contains(&CollideFlag::RIGHT)
+                        if collide.contains(&CollideFlag::LEFT) && self.ball.dx < 0.
+                            || collide.contains(&CollideFlag::RIGHT) && self.ball.dx > 0.
                         {
                             self.ball.dx = -self.ball.dx;
                         }
