@@ -85,6 +85,8 @@ impl InitState {
             "music".to_owned(),
             audio::Source::new(ctx, "/music.wav").unwrap(),
         );
+
+        init_global_sprite(reg);
         let state = InitState {
             status: InitStateMenu::Start,
         };
@@ -131,6 +133,7 @@ impl States for InitState {
             reg.clear_sound();
             reg.clear_text();
 
+            // 수치 정보 등록
             match self.status {
                 InitStateMenu::Start => {
                     let game_state = PlayState::new(ctx, reg);
@@ -247,6 +250,9 @@ pub struct PlayState {
     paddle: Paddle,
     ball: Ball,
     blocks: Vec<Block>,
+    score: i32,
+    health: i32,
+    level: i32,
 }
 
 impl PlayState {
@@ -255,9 +261,9 @@ impl PlayState {
 
         reg.add_font("default".to_owned(), default_font);
 
-        let paddle = Paddle::new(ctx, reg);
+        let paddle = Paddle::new();
 
-        let ball = Ball::new(ctx, reg);
+        let ball = Ball::new();
 
         // 배경 음악
         reg.add_sound(
@@ -316,14 +322,20 @@ impl PlayState {
         play_bgm(&"music".to_owned(), reg);
 
         // 블럭 초기화하기
+        let mut blocks = level_maker::create_map(1);
 
-        let mut blocks = level_maker::create_map(ctx, reg, 1);
+        // score, health, level 값 가져오기
+        reg.add_i32("score".to_owned(), 0);
+        reg.add_i32("health".to_owned(), 3);
 
         PlayState {
             paused: false,
             paddle,
             ball,
             blocks,
+            health: 3,
+            level: 1,
+            score: 0,
         }
     }
 }
@@ -381,6 +393,11 @@ impl States for PlayState {
                 // 공처리
                 self.ball.update(ctx, reg, dt);
 
+                if self.ball.y > game::VIRTUAL_HEIGHT {
+                    // 죽음..
+                    self.health = self.health - 1;
+                    self.ball.reset();
+                }
                 // 두 물체의 충돌처리
                 let collide = objects::collide_aabb(&self.paddle, &self.ball);
                 if collide.contains(&CollideFlag::TOP) {
@@ -458,6 +475,21 @@ impl States for PlayState {
                     graphics::WHITE,
                 ),
             );
+        }
+
+        // 생명 출력하기
+        let health = self.health;
+
+        let mut hx = 0.;
+
+        for _ in 0..health {
+            reg.draw_heart(ctx, objects::HEARTS_FLAG, hx, 0.);
+            hx = hx + 11.;
+        }
+
+        for _ in health..3 {
+            reg.draw_heart(ctx, objects::HEARTS_FLAG + 1, hx, 0.);
+            hx = hx + 11.;
         }
 
         graphics::present(ctx);

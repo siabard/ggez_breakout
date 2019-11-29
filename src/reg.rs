@@ -17,7 +17,9 @@ pub struct Reg {
     pub key_status: HashMap<KeyCode, bool>,
     pub objects: HashMap<String, Box<dyn Object>>,
     pub f32_values: HashMap<String, f32>,
+    pub i32_values: HashMap<String, i32>,
     pub sprites: Option<Quad>,
+    pub hearts: Option<Quad>,
 }
 
 impl Reg {
@@ -30,13 +32,30 @@ impl Reg {
             key_status: HashMap::<KeyCode, bool>::new(),
             objects: HashMap::<String, Box<dyn Object>>::new(),
             f32_values: HashMap::<String, f32>::new(),
+            i32_values: HashMap::<String, i32>::new(),
             sprites: None,
+            hearts: None,
         }
     }
 
     // sprites 초기화
     pub fn init_sprite(&mut self, ctx: &mut Context, path: &Path) {
         self.sprites = Some(Quad::new(ctx, path));
+    }
+
+    pub fn init_heart(&mut self, ctx: &mut Context, path: &Path) {
+        self.hearts = Some(Quad::new(ctx, path));
+    }
+
+    // Heart 생성하기
+    pub fn register_heart(&mut self, key: i32, x: f32, y: f32, w: f32, h: f32) {
+        match &mut self.hearts {
+            Some(sp) => {
+                (*sp).add_sprite(key, x, y, w, h);
+                ()
+            }
+            None => (),
+        }
     }
 
     // sprites를 등록하기
@@ -48,6 +67,16 @@ impl Reg {
             }
             None => (),
         }
+    }
+
+    // sprite drawing
+    pub fn draw_sprite(&mut self, ctx: &mut Context, key: i32, x: f32, y: f32) {
+        self.sprites.as_mut().unwrap().draw_sprite(ctx, key, x, y)
+    }
+
+    // heart drawing
+    pub fn draw_heart(&mut self, ctx: &mut Context, key: i32, x: f32, y: f32) {
+        self.hearts.as_mut().unwrap().draw_sprite(ctx, key, x, y)
     }
 
     // 방금 전까지는 안 눌린 것인지 확인
@@ -104,11 +133,23 @@ impl Reg {
     }
 
     pub fn add_f32(&mut self, key: String, f32_: f32) {
-        self.f32_values.insert(key, f32_);
+        let fvalue = self.f32_values.entry(key).or_insert(0.);
+
+        *fvalue = f32_;
     }
 
-    pub fn get_f32(&self, key: String) -> Option<&f32> {
-        self.f32_values.get(&key)
+    pub fn get_f32(&self, key: String) -> f32 {
+        *self.f32_values.get(&key).unwrap()
+    }
+
+    pub fn add_i32(&mut self, key: String, i32_: i32) {
+        let ivalue = self.i32_values.entry(key).or_insert(0);
+
+        *ivalue = i32_;
+    }
+
+    pub fn get_i32(&self, key: String) -> i32 {
+        *self.i32_values.get(&key).unwrap()
     }
 
     pub fn add_image(&mut self, key: String, image: ggez::graphics::Image) {
@@ -137,5 +178,23 @@ impl Reg {
 
     pub fn clear_objects(&mut self) {
         self.objects.clear();
+    }
+
+    pub fn clear_f32_values(&mut self) {
+        self.f32_values.clear();
+    }
+
+    pub fn clear_i32_values(&mut self) {
+        self.i32_values.clear();
+    }
+
+    pub fn clear_all(&mut self) {
+        self.clear_sound();
+        self.clear_text();
+        self.clear_font();
+        self.clear_image();
+        self.clear_objects();
+        self.clear_f32_values();
+        self.clear_i32_values();
     }
 }

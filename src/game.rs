@@ -49,6 +49,7 @@ impl Game {
 
         let mut reg = Reg::new();
         reg.init_sprite(ctx, Path::new("/breakout.png"));
+        reg.init_heart(ctx, Path::new("/hearts.png"));
         let init_state = states::InitState::new(ctx, &mut reg);
 
         let buffer = ggez::graphics::Canvas::new(

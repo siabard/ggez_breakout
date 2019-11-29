@@ -9,6 +9,7 @@ use std::path::Path;
 pub const PADDLE_FLAG: i32 = 0b0000_0000_0000_0000_0001_0000_0000_0000;
 pub const BALL_FLAG: i32 = 0b0000_0000_0000_0000_0010_0000_0000_0000;
 pub const BLOCK_FLAG: i32 = 0b0000_0000_0000_0000_0100_0000_0000_0000;
+pub const HEARTS_FLAG: i32 = 0b0000_0000_0000_0000_1000_0000_0000_0000;
 pub const BLUE: i32 = 1;
 pub const GREEN: i32 = 2;
 pub const RED: i32 = 4;
@@ -27,26 +28,6 @@ pub const SIZE_MASK: i32 = 0b1111_0000;
 
 pub const PADDLE_SPEED: f32 = 200.;
 
-pub struct Paddle {
-    size: i32,
-    color: i32,
-    pub width: f32,
-    pub height: f32,
-    pub x: f32,
-    pub y: f32,
-    pub dx: f32,
-}
-
-pub struct Ball {
-    color: i32,
-    pub width: f32,
-    pub height: f32,
-    pub x: f32,
-    pub y: f32,
-    pub dx: f32,
-    pub dy: f32,
-}
-
 #[derive(PartialEq, Debug)]
 pub enum CollideFlag {
     TOP,
@@ -54,6 +35,13 @@ pub enum CollideFlag {
     LEFT,
     RIGHT,
     NONE,
+}
+
+pub trait Object {
+    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32);
+    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg);
+    fn set_sprite(&mut self, idx: i32);
+    fn get_xywh(&self) -> (f32, f32, f32, f32);
 }
 
 /// AABB Collide
@@ -94,11 +82,69 @@ pub fn collide_aabb(a: &dyn Object, b: &dyn Object) -> Vec<CollideFlag> {
     }
 }
 
-pub trait Object {
-    fn update(&mut self, ctx: &mut Context, reg: &mut Reg, dt: f32);
-    fn draw(&mut self, ctx: &mut Context, reg: &mut Reg);
-    fn set_sprite(&mut self, idx: i32);
-    fn get_xywh(&self) -> (f32, f32, f32, f32);
+// 기본적인 스프라이트 데이터를 모두 초기화한다.
+pub fn init_global_sprite(reg: &mut Reg) {
+    // Paddle
+    reg.register_sprite(PADDLE_FLAG + BLUE + SMALL, 0., 64., 32., 16.);
+    reg.register_sprite(PADDLE_FLAG + BLUE + MEDIUM, 32., 64., 64., 16.);
+    reg.register_sprite(PADDLE_FLAG + BLUE + LARGE, 96., 64., 96., 16.);
+    reg.register_sprite(PADDLE_FLAG + BLUE + HUGE, 0., 80., 128., 16.);
+
+    reg.register_sprite(PADDLE_FLAG + GREEN + SMALL, 0., 96., 32., 16.);
+    reg.register_sprite(PADDLE_FLAG + GREEN + MEDIUM, 32., 96., 64., 16.);
+    reg.register_sprite(PADDLE_FLAG + GREEN + LARGE, 96., 96., 96., 16.);
+    reg.register_sprite(PADDLE_FLAG + GREEN + HUGE, 0., 112., 128., 16.);
+
+    reg.register_sprite(PADDLE_FLAG + RED + SMALL, 0., 128., 32., 16.);
+    reg.register_sprite(PADDLE_FLAG + RED + MEDIUM, 32., 128., 64., 16.);
+    reg.register_sprite(PADDLE_FLAG + RED + LARGE, 96., 128., 96., 16.);
+    reg.register_sprite(PADDLE_FLAG + RED + HUGE, 0., 144., 128., 16.);
+
+    reg.register_sprite(PADDLE_FLAG + MAGENTA + SMALL, 0., 160., 32., 16.);
+    reg.register_sprite(PADDLE_FLAG + MAGENTA + MEDIUM, 32., 160., 64., 16.);
+    reg.register_sprite(PADDLE_FLAG + MAGENTA + LARGE, 96., 160., 96., 16.);
+    reg.register_sprite(PADDLE_FLAG + MAGENTA + HUGE, 0., 176., 128., 16.);
+
+    // Ball
+
+    reg.register_sprite(BALL_FLAG + BLUE, 96., 48., 8., 8.);
+    reg.register_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
+    reg.register_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
+    reg.register_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
+
+    reg.register_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
+    reg.register_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
+    reg.register_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
+
+    // block
+    // 블럭 종류는 총 21개임
+    let mut x: f32 = 0.;
+    let mut y: f32 = 0.;
+
+    for i in 1..22 {
+        reg.register_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
+
+        if i % 6 == 0 {
+            x = 0.;
+            y = y + 16.;
+        } else {
+            x = x + 32.;
+        }
+    }
+
+    // hearts
+    reg.register_heart(HEARTS_FLAG, 0., 0., 10., 9.);
+    reg.register_heart(HEARTS_FLAG + 1, 10., 0., 10., 9.);
+}
+
+pub struct Paddle {
+    size: i32,
+    color: i32,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub dx: f32,
 }
 
 impl Paddle {
@@ -112,29 +158,7 @@ impl Paddle {
         }
     }
 
-    pub fn new(ctx: &mut Context, reg: &mut Reg) -> Paddle {
-        if let Some(sprite) = &mut (reg.sprites) {
-            (*sprite).add_sprite(PADDLE_FLAG + BLUE + SMALL, 0., 64., 32., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + BLUE + MEDIUM, 32., 64., 64., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + BLUE + LARGE, 96., 64., 96., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + BLUE + HUGE, 0., 80., 128., 16.);
-
-            (*sprite).add_sprite(PADDLE_FLAG + GREEN + SMALL, 0., 96., 32., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + GREEN + MEDIUM, 32., 96., 64., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + GREEN + LARGE, 96., 96., 96., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + GREEN + HUGE, 0., 112., 128., 16.);
-
-            (*sprite).add_sprite(PADDLE_FLAG + RED + SMALL, 0., 128., 32., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + RED + MEDIUM, 32., 128., 64., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + RED + LARGE, 96., 128., 96., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + RED + HUGE, 0., 144., 128., 16.);
-
-            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + SMALL, 0., 160., 32., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + MEDIUM, 32., 160., 64., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + LARGE, 96., 160., 96., 16.);
-            (*sprite).add_sprite(PADDLE_FLAG + MAGENTA + HUGE, 0., 176., 128., 16.);
-        }
-
+    pub fn new() -> Paddle {
         // 화면 가운데에 위치시킨다.
         Paddle {
             size: MEDIUM,
@@ -144,31 +168,6 @@ impl Paddle {
             width: 64.,
             height: 16.,
             dx: 0.,
-        }
-    }
-}
-
-impl Ball {
-    pub fn new(ctx: &mut Context, reg: &mut Reg) -> Ball {
-        if let Some(sprite) = &mut (reg.sprites) {
-            (*sprite).add_sprite(BALL_FLAG + BLUE, 96., 48., 8., 8.);
-            (*sprite).add_sprite(BALL_FLAG + GREEN, 104., 48., 8., 8.);
-            (*sprite).add_sprite(BALL_FLAG + RED, 112., 48., 8., 8.);
-            (*sprite).add_sprite(BALL_FLAG + MAGENTA, 120., 48., 8., 8.);
-
-            (*sprite).add_sprite(BALL_FLAG + STAT_1, 96., 56., 8., 8.);
-            (*sprite).add_sprite(BALL_FLAG + STAT_2, 104., 56., 8., 8.);
-            (*sprite).add_sprite(BALL_FLAG + STAT_3, 112., 56., 8., 8.);
-        }
-        // 화면 가운데에 위치시킨다.
-        Ball {
-            color: MAGENTA,
-            x: game::VIRTUAL_WIDTH / 2.,
-            y: 32.,
-            width: 8.,
-            height: 8.,
-            dx: 2.,
-            dy: 2.,
         }
     }
 }
@@ -192,12 +191,7 @@ impl Object for Paddle {
     }
 
     fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
-        reg.sprites.as_mut().unwrap().draw_sprite(
-            ctx,
-            PADDLE_FLAG + self.color + self.size,
-            self.x,
-            self.y,
-        );
+        reg.draw_sprite(ctx, PADDLE_FLAG + self.color + self.size, self.x, self.y);
     }
 
     fn set_sprite(&mut self, idx: i32) {
@@ -216,6 +210,37 @@ impl Object for Paddle {
     }
 }
 
+pub struct Ball {
+    color: i32,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub dx: f32,
+    pub dy: f32,
+}
+
+impl Ball {
+    pub fn new() -> Ball {
+        // 화면 가운데에 위치시킨다.
+        Ball {
+            color: MAGENTA,
+            x: game::VIRTUAL_WIDTH / 2.,
+            y: 132.,
+            width: 8.,
+            height: 8.,
+            dx: 2.,
+            dy: 2.,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.y = 132.;
+        self.dx = 2.;
+        self.dy = 2.;
+    }
+}
+
 impl Object for Ball {
     fn update(&mut self, _ctx: &mut Context, reg: &mut Reg, _dt: f32) {
         if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
@@ -223,7 +248,7 @@ impl Object for Ball {
             //let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
             play_sound_once(&"wall-hit".to_owned(), reg);
         }
-        if (self.y < 0. || self.y > game::VIRTUAL_HEIGHT) {
+        if self.y < 0. {
             self.dy = -self.dy;
             //let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
             play_sound_once(&"wall-hit".to_owned(), reg);
@@ -234,10 +259,7 @@ impl Object for Ball {
     }
 
     fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
-        reg.sprites
-            .as_mut()
-            .unwrap()
-            .draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
+        reg.draw_sprite(ctx, BALL_FLAG + self.color, self.x, self.y);
     }
 
     fn set_sprite(&mut self, idx: i32) {
@@ -265,24 +287,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(ctx: &mut Context, reg: &mut Reg, ox: f32, oy: f32) -> Block {
-        if let Some(sprite) = &mut (reg.sprites) {
-            // 블럭 종류는 총 21개임
-            let mut x: f32 = 0.;
-            let mut y: f32 = 0.;
-
-            for i in 1..22 {
-                (*sprite).add_sprite(BLOCK_FLAG + i, x, y, 32., 16.);
-
-                if i % 6 == 0 {
-                    x = 0.;
-                    y = y + 16.;
-                } else {
-                    x = x + 32.;
-                }
-            }
-        }
-
+    pub fn new(ox: f32, oy: f32) -> Block {
         // Block 설치하기
         Block {
             color: 1,
@@ -310,7 +315,7 @@ impl Object for Block {
 
     fn draw(&mut self, ctx: &mut Context, reg: &mut Reg) {
         if self.inplay {
-            reg.sprites.as_mut().unwrap().draw_sprite(
+            reg.draw_sprite(
                 ctx,
                 BLOCK_FLAG + 1 + (self.color - 1) * 4 + self.tier,
                 self.x,
