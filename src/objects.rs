@@ -1,10 +1,8 @@
 use crate::game;
-use crate::quad::Quad;
-use crate::reg::Reg;
 use crate::states::{play_sound, play_sound_once};
 
-use ggez::{self, graphics, Context};
-use std::path::Path;
+use crate::reg::Reg;
+use ggez::Context;
 
 pub const PADDLE_FLAG: i32 = 0b0000_0000_0000_0000_0001_0000_0000_0000;
 pub const BALL_FLAG: i32 = 0b0000_0000_0000_0000_0010_0000_0000_0000;
@@ -243,7 +241,7 @@ impl Ball {
 
 impl Object for Ball {
     fn update(&mut self, _ctx: &mut Context, reg: &mut Reg, _dt: f32) {
-        if (self.x < 0. || self.x > game::VIRTUAL_WIDTH) {
+        if self.x < 0. || self.x > game::VIRTUAL_WIDTH {
             self.dx = -self.dx;
             //let sound = reg.get_sound_mut("wall-hit".to_owned()).unwrap();
             play_sound_once(&"wall-hit".to_owned(), reg);

@@ -1,6 +1,4 @@
 use crate::objects::Block;
-use crate::reg::Reg;
-use ggez::Context;
 use rand::*;
 
 pub fn create_map(_level: i32) -> Vec<Block> {

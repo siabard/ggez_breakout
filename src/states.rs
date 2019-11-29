@@ -3,20 +3,17 @@
 //! InitState : 초기 시작 상태
 //! MenuState : 메뉴 상태
 
-use crate::game::{self, Game};
+use crate::game;
 use crate::level_maker;
 use crate::objects::*;
 use crate::objects::{self, Ball, Block, Object, Paddle};
-use crate::quad::Quad;
 use crate::reg::Reg;
 use ggez::audio;
 use ggez::audio::SoundSource;
-use ggez::graphics::{self, Canvas, DrawMode, DrawParam, Rect};
+use ggez::graphics::{self, Canvas};
 use ggez::input::keyboard::KeyCode;
 use ggez::nalgebra as na;
 use ggez::Context;
-use std::collections::HashMap;
-use std::path::Path;
 
 pub enum StateResult {
     PushState(Box<dyn States>),
@@ -31,30 +28,30 @@ pub trait States {
 }
 
 pub fn play_sound_once(name: &String, reg: &mut Reg) {
-    let mut sound = reg.get_sound_mut((*name).clone()).unwrap();
+    let sound = reg.get_sound_mut((*name).clone()).unwrap();
     if sound.playing() == false {
         sound.set_repeat(false);
-        sound.play();
+        sound.play().unwrap();
     }
 }
 
 pub fn play_sound(name: &String, reg: &mut Reg) {
-    let mut sound = reg.get_sound_mut((*name).clone()).unwrap();
+    let sound = reg.get_sound_mut((*name).clone()).unwrap();
     if sound.playing() == false {
-        sound.play();
+        sound.play().unwrap();
     }
 }
 
 pub fn play_bgm(name: &String, reg: &mut Reg) {
-    let mut sound = reg.get_sound_mut((*name).clone()).unwrap();
+    let sound = reg.get_sound_mut((*name).clone()).unwrap();
     sound.set_repeat(true);
     if sound.playing() == false {
-        sound.play();
+        sound.play().unwrap();
     }
 }
 
 pub fn stop_sound(name: &String, reg: &mut Reg) {
-    let mut sound = reg.get_sound_mut((*name).clone()).unwrap();
+    let sound = reg.get_sound_mut((*name).clone()).unwrap();
     if sound.playing() == true {
         sound.stop();
     }
@@ -208,7 +205,7 @@ impl States for InitState {
         )
         .unwrap();
 
-        graphics::present(ctx);
+        graphics::present(ctx).unwrap();
 
         ggez::graphics::set_canvas(ctx, None);
         StateResult::Void
@@ -238,7 +235,7 @@ impl States for PauseState {
 
         graphics::clear(ctx, [0.0, 1.0, 0.0, 1.0].into());
 
-        graphics::present(ctx);
+        graphics::present(ctx).unwrap();
 
         ggez::graphics::set_canvas(ctx, None);
         StateResult::Void
@@ -322,7 +319,7 @@ impl PlayState {
         play_bgm(&"music".to_owned(), reg);
 
         // 블럭 초기화하기
-        let mut blocks = level_maker::create_map(1);
+        let blocks = level_maker::create_map(1);
 
         // score, health, level 값 가져오기
         reg.add_i32("score".to_owned(), 0);
@@ -474,7 +471,8 @@ impl States for PlayState {
                     0.0,
                     graphics::WHITE,
                 ),
-            );
+            )
+            .unwrap();
         }
 
         // 생명 출력하기
@@ -492,7 +490,7 @@ impl States for PlayState {
             hx = hx + 11.;
         }
 
-        graphics::present(ctx);
+        graphics::present(ctx).unwrap();
 
         graphics::set_canvas(ctx, None);
 
