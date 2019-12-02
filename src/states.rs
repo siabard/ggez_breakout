@@ -245,6 +245,11 @@ impl States for PauseState {
     }
 }
 
+pub enum PlayStateMode {
+    READY,
+    GO,
+}
+
 pub struct PlayState {
     paused: bool,
     paddle: Paddle,
@@ -253,6 +258,7 @@ pub struct PlayState {
     score: i32,
     health: i32,
     level: i32,
+    mode: PlayStateMode,
 }
 
 impl PlayState {
@@ -336,6 +342,7 @@ impl PlayState {
             health: 3,
             level: 1,
             score: 0,
+            mode: PlayStateMode::READY,
         }
     }
 }
@@ -392,6 +399,11 @@ impl States for PlayState {
 
                 // 공처리
                 self.ball.update(ctx, reg, dt);
+
+                // 게임 상태가 READY이면 공은 paddle을 따라다녀야한다.
+                if self.mode == PlayStateMode::READY {
+                    self.ball.x = self.paddle.x + self.paddle.width / 2.;
+                }
 
                 if self.ball.y > game::VIRTUAL_HEIGHT {
                     // 죽음..

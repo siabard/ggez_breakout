@@ -226,18 +226,18 @@ impl Ball {
         Ball {
             color: MAGENTA,
             x: game::VIRTUAL_WIDTH / 2.,
-            y: 132.,
+            y: game::VIRTUAL_HEIGHT - 40.,
             width: 8.,
             height: 8.,
-            dx: 2.,
-            dy: 2.,
+            dx: 0.,
+            dy: 0.,
         }
     }
 
     pub fn reset(&mut self) {
-        self.y = 132.;
-        self.dx = 2.;
-        self.dy = 2.;
+        self.y = VIRTUAL_HEIGHT - 40.,;
+        self.dx = 0.;
+        self.dy = 0.;
     }
 }
 
