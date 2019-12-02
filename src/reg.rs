@@ -140,6 +140,10 @@ impl Reg {
         *self.f32_values.get(&key).unwrap()
     }
 
+    pub fn get_f32_mut(&mut self, key: String) -> &mut f32 {
+        self.f32_values.get_mut(&key).unwrap()
+    }
+
     pub fn add_i32(&mut self, key: String, i32_: i32) {
         let ivalue = self.i32_values.entry(key).or_insert(0);
 
@@ -148,6 +152,10 @@ impl Reg {
 
     pub fn get_i32(&self, key: String) -> i32 {
         *self.i32_values.get(&key).unwrap()
+    }
+
+    pub fn get_i32_mut(&mut self, key: String) -> &mut i32 {
+        self.i32_values.get_mut(&key).unwrap()
     }
 
     pub fn add_image(&mut self, key: String, image: ggez::graphics::Image) {

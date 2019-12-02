@@ -3,6 +3,7 @@ use crate::states::{play_sound, play_sound_once};
 
 use crate::reg::Reg;
 use ggez::Context;
+use rand::*;
 
 pub const PADDLE_FLAG: i32 = 0b0000_0000_0000_0000_0001_0000_0000_0000;
 pub const BALL_FLAG: i32 = 0b0000_0000_0000_0000_0010_0000_0000_0000;
@@ -233,9 +234,15 @@ impl Ball {
     }
 
     pub fn reset(&mut self) {
-        self.y = VIRTUAL_HEIGHT - 40.,;
+        self.y = game::VIRTUAL_HEIGHT - 40.;
         self.dx = 0.;
         self.dy = 0.;
+    }
+
+    pub fn fire(&mut self) {
+        let mut rng = thread_rng();
+        self.dx = rng.gen_range(-4, -2) as f32;
+        self.dy = rng.gen_range(-4, -1) as f32;
     }
 }
 
