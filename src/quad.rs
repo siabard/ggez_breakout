@@ -1,4 +1,3 @@
-use ggez::graphics;
 use ggez::nalgebra as na;
 use ggez::Context;
 use std::collections::HashMap;
@@ -58,6 +57,7 @@ impl Quad {
             ggez::graphics::DrawParam::new()
                 .dest(dest)
                 .src(*self.sprite.get(&key).unwrap()),
-        );
+        )
+        .unwrap();
     }
 }

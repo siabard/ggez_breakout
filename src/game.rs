@@ -2,13 +2,9 @@
 //! 게임 뼈대는 실제 Rendering을 수행한다.
 
 use ggez;
-use ggez::audio;
-
-use ggez::audio::SoundSource;
-
 use ggez::event;
 use ggez::event::KeyCode;
-use ggez::graphics::{self, Canvas};
+use ggez::graphics;
 use ggez::nalgebra as na;
 use ggez::timer;
 use ggez::{Context, GameResult};

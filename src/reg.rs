@@ -1,9 +1,7 @@
-use crate::objects::{Ball, Object, Paddle};
+use crate::objects::Object;
 use crate::quad::Quad;
-use crate::states;
 use ggez;
 use ggez::audio;
-use ggez::graphics;
 use ggez::input::keyboard::KeyCode;
 use ggez::Context;
 use std::collections::HashMap;
