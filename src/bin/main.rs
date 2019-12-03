@@ -1,7 +1,10 @@
-use ggez;
-use ggez::event;
-use ggez::GameResult;
+use ggez::{self, event, filesystem, GameResult};
 use ggez_breakout;
+use std::path;
+
+use ggez_breakout::save::*;
+
+use std::io::{Read, Write};
 
 use ggez_breakout::game::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
@@ -15,6 +18,20 @@ fn main() -> GameResult {
 
     ggez::graphics::set_default_filter(ctx, ggez::graphics::FilterMode::Linear);
     let state = &mut ggez_breakout::game::Game::new(ctx)?;
+
+    //파일 저장 테스트
+
+    println!("Resource stats:");
+    filesystem::print_all(ctx);
+
+    let file_opt = filesystem::OpenOptions::new().create(true).append(true);
+    let mut file = filesystem::open_options(ctx, path::Path::new("/testfile.txt"), file_opt)?;
+
+    let bytes = "테스트".as_bytes();
+    file.write_all(bytes)?;
+
+    let mut save = Save::new();
+    save.init(ctx);
 
     event::run(ctx, event_loop, state)
 }
